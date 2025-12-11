@@ -100,10 +100,9 @@ vim.g.have_nerd_font = true
 
 -- Make line numbers default
 vim.o.number = true
-vim.o.relativenumber = true
 -- You can also add relative line numbers, to help with jumping.
 --  Experiment for yourself to see if you like it!
--- vim.o.relativenumber = true
+vim.o.relativenumber = true
 
 -- Enable mouse mode, can be useful for resizing splits for example!
 vim.o.mouse = 'a'
@@ -121,6 +120,12 @@ end)
 
 -- Enable break indent
 vim.o.breakindent = true
+vim.o.expandtab = true -- Use spaces instead of tabs
+vim.o.shiftwidth = 4 -- Indent size
+vim.o.tabstop = 4 -- Number of spaces per tab
+vim.o.softtabstop = 4 -- How many spaces <Tab> inserts
+vim.o.smartindent = true -- Smarter auto-indenting
+vim.o.autoindent = true
 
 -- Save undo history
 vim.o.undofile = true
@@ -209,6 +214,29 @@ vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper win
 -- Set easier escape key
 vim.keymap.set('i', 'jj', '<Esc>')
 
+-- Set easier toggle comment
+vim.keymap.set({ 'n', 'v' }, '<C-_>', 'gcc', { remap = true })
+
+-- Neotree binds
+vim.keymap.set('n', '<leader>j', ':Neotree toggle<CR>', { desc = 'Toggle Neo-tree' })
+
+-- Toggle focus between Neo-tree and the current window
+local function toggle_neotree_focus()
+  local win = vim.api.nvim_get_current_win()
+  local buf = vim.api.nvim_win_get_buf(win)
+  local ft = vim.api.nvim_get_option_value('filetype', { buf = buf })
+
+  if ft == 'neo-tree' then
+    -- If already focused on Neo-tree → go back
+    vim.cmd 'wincmd p'
+  else
+    -- If not focused → focus Neo-tree
+    vim.cmd 'Neotree focus'
+  end
+end
+
+vim.keymap.set('n', '<leader>;', toggle_neotree_focus, { desc = 'Toggle focus Neo-tree' })
+
 -- [[ Basic Autocommands ]]
 --  See `:help lua-guide-autocommands`
 
@@ -220,6 +248,17 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
   callback = function()
     vim.hl.on_yank()
+  end,
+})
+
+-- Override HTML formatting
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'html',
+  callback = function()
+    vim.opt_local.shiftwidth = 2
+    vim.opt_local.tabstop = 2
+    vim.opt_local.softtabstop = 2
+    vim.opt_local.expandtab = true
   end,
 })
 
@@ -676,6 +715,28 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         clangd = {},
+        rust_analyzer = {},
+        pyright = {},
+        eslint = {},
+        html = {
+          init_options = {
+            provideFormatter = true,
+            embeddedLanguages = {
+              css = true,
+              javascript = true,
+            },
+            configuration = {
+              emmet = { includeLanguages = { html = true } },
+            },
+          },
+        },
+        emmet_ls = {},
+        cssls = {},
+        tailwindcss = {},
+        ts_ls = {},
+        jsonls = {},
+        yamlls = {},
+
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -775,6 +836,16 @@ require('lazy').setup({
         c = { 'clang-format' },
         cpp = { 'clang-format' },
         Makefile = { 'bake' },
+        javascript = { 'prettierd', 'prettier' },
+        javascriptreact = { 'prettierd', 'prettier' },
+        typescript = { 'prettierd', 'prettier' },
+        typescriptreact = { 'prettierd', 'prettier' },
+        html = { 'prettierd', 'prettier' },
+        css = { 'prettierd', 'prettier' },
+        json = { 'prettierd', 'prettier' },
+        yaml = { 'prettier' },
+        markdown = { 'prettier' },
+
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -951,7 +1022,25 @@ require('lazy').setup({
     main = 'nvim-treesitter.configs', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = {
+        'bash',
+        'c',
+        'diff',
+        'html',
+        'lua',
+        'luadoc',
+        'markdown',
+        'markdown_inline',
+        'query',
+        'rust',
+        'vim',
+        'vimdoc',
+        'javascript',
+        'typescript',
+        'tsx',
+        'css',
+        'json',
+      },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -959,9 +1048,9 @@ require('lazy').setup({
         -- Some languages depend on vim's regex highlighting system (such as Ruby) for indent rules.
         --  If you are experiencing weird indenting issues, add the language to
         --  the list of additional_vim_regex_highlighting and disabled languages for indent.
-        additional_vim_regex_highlighting = { 'ruby' },
+        additional_vim_regex_highlighting = { 'ruby', 'html' },
       },
-      indent = { enable = true, disable = { 'ruby' } },
+      indent = { enable = true, disable = { 'ruby', 'html' } },
     },
     -- There are additional nvim-treesitter modules that you can use to interact
     -- with nvim-treesitter. You should go explore a few and see what interests you:
@@ -983,15 +1072,15 @@ require('lazy').setup({
   -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
-  -- require 'kickstart.plugins.neo-tree',
-  -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
+  require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.neo-tree',
+  require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
   -- NOTE: The import below can automatically add your own plugins, configuration, etc from `lua/custom/plugins/*.lua`
   --    This is the easiest way to modularize your config.
   --
   --  Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
   --
   -- For additional information with loading, sourcing and examples see `:help lazy.nvim-🔌-plugin-spec`
   -- Or use telescope!
